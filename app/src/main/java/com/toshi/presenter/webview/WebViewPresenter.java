@@ -108,16 +108,41 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
     private void initView() {
         initToolbar();
         animateLoadingSpinner();
+        initClickListeners();
     }
 
     private void initToolbar() {
+        this.activity.getBinding().closeButton.setOnClickListener(__ -> handleBackButtonClicked());
+    }
+
+    private void initClickListeners() {
+        this.activity.getBinding().backButton.setOnClickListener(__ -> {
+            final WebView webView = this.activity.getBinding().webview;
+            if (webView.canGoBack()) {
+                webView.goBack();
+            }
+        });
+        this.activity.getBinding().forwardButton.setOnClickListener(__ -> {
+            final WebView webView = this.activity.getBinding().webview;
+            if (webView.canGoForward()) {
+                webView.goForward();
+            }
+        });
+    }
+
+    private void setToolbarTitle(final String title) {
         try {
-            final String address = getAddress();
-            this.activity.getBinding().title.setText(address);
+            this.activity.getBinding().title.setText(title == null ? this.activity.getString(R.string.page_blank) : title);
+            this.activity.getBinding().title.setVisibility(title == null ? View.GONE : View.VISIBLE);
+
         } catch (final IllegalArgumentException ex) {
             this.activity.getBinding().title.setText(BaseApplication.get().getString(R.string.unknown_address));
         }
-        this.activity.getBinding().closeButton.setOnClickListener(__ -> handleBackButtonClicked());
+    }
+
+    private void setToolbarAddress(final String address) {
+        this.activity.getBinding().address.setText(address);
+        this.activity.getBinding().address.setVisibility(address == null ? View.GONE : View.VISIBLE);
     }
 
     private void handleBackButtonClicked() {
@@ -178,13 +203,22 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
                         response.getMimeType(),
                         response.getEncoding(),
                         null);
+
+            setToolbarAddress(response.getAddress());
         }
 
         @Override
         public void onLoaded() {
             if (activity == null) return;
             hideLoadingSpinner();
+            final WebView webview = activity.getBinding().webview;
+            setToolbarTitle(webview.getTitle());
             isLoaded = true;
+        }
+
+        @Override
+        public void onUrlChanged(String url) {
+            setToolbarAddress(url);
         }
 
         @Override

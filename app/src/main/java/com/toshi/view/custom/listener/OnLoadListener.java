@@ -20,6 +20,7 @@ package com.toshi.view.custom.listener;
 public interface OnLoadListener {
     void onReady();
     void onLoaded();
+    void onUrlChanged(final String url);
     void onError(final Throwable t);
     void newPageLoad(final String url);
 }

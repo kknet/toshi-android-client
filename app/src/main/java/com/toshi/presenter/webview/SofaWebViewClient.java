@@ -18,6 +18,7 @@
 package com.toshi.presenter.webview;
 
 
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.webkit.WebResourceRequest;
@@ -37,6 +38,7 @@ import com.toshi.view.custom.listener.OnLoadListener;
     @Override
     public void onPageFinished(WebView webView, final String url) {
         this.listener.onLoaded();
+        this.listener.onUrlChanged(url);
         super.onPageFinished(webView, url);
     }
 
