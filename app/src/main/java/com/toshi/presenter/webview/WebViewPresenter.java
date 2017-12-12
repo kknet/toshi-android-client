@@ -131,6 +131,7 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
     }
 
     private void setToolbarTitle(final String title) {
+        if (this.activity == null) return;
         try {
             this.activity.getBinding().title.setText(title == null ? this.activity.getString(R.string.page_blank) : title);
             this.activity.getBinding().title.setVisibility(title == null ? View.GONE : View.VISIBLE);
@@ -141,18 +142,14 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
     }
 
     private void setToolbarAddress(final String address) {
+        if (this.activity == null) return;
         this.activity.getBinding().address.setText(address);
         this.activity.getBinding().address.setVisibility(address == null ? View.GONE : View.VISIBLE);
     }
 
     private void handleBackButtonClicked() {
         if (this.activity == null) return;
-        final WebView webView = this.activity.getBinding().webview;
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            this.activity.onBackPressed();
-        }
+        this.activity.onBackPressed();
     }
 
     private void animateLoadingSpinner() {
