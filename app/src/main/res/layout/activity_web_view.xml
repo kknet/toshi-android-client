@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:scaleType="fitCenter"
                 android:tint="@color/textColorContrast"
-                app:srcCompat="@drawable/ic_arrow_back"
+                app:srcCompat="@drawable/ic_action_close"
                 style="@style/closeButtonStyle"/>
 
             <android.support.v4.widget.Space
