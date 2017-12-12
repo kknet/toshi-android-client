@@ -19,6 +19,7 @@ package com.toshi.presenter.webview;
 
 import android.os.Build;
 import android.support.annotation.StringRes;
+import android.util.Pair;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -36,9 +37,11 @@ import com.toshi.view.custom.listener.OnLoadListener;
 
 import java.net.URI;
 
+import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
 
 public class WebViewPresenter implements Presenter<WebViewActivity> {
@@ -48,8 +51,10 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
     private SofaInjector sofaInjector;
     private SofaHostWrapper sofaHostWrapper;
     private CompositeSubscription subscriptions;
+    private PublishSubject<String> viewSubject;
 
     private boolean firstTimeAttaching = true;
+    private boolean firstTimeLoading= true;
     private boolean isLoaded = false;
 
     @Override
@@ -62,11 +67,45 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
         }
 
         initWebClient();
+        initShortLivingObjects();
         initView();
+    }
+
+    private void initShortLivingObjects() {
+        final Subscription sub = Observable.zip(
+                    viewSubject.asObservable(),
+                    sofaInjector.loadUrl(getAddress()).toObservable(),
+                    Pair::new
+                )
+                .map(stringSofaInjectResponsePair -> stringSofaInjectResponsePair.second)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .toSingle()
+                .subscribe(
+                        this::handleWebResourceResponse,
+                        this::onError
+                );
+
+        subscriptions.add(sub);
+    }
+
+    private void handleWebResourceResponse(final SofaInjectResponse response) {
+        if (activity == null) return;
+        activity.getBinding()
+                .webview
+                .loadDataWithBaseURL(
+                        response.getAddress(),
+                        response.getData(),
+                        response.getMimeType(),
+                        response.getEncoding(),
+                        null);
+
+        setToolbarAddress(response.getAddress());
     }
 
     private void initLongLivingObjects() {
         this.subscriptions = new CompositeSubscription();
+        this.viewSubject = PublishSubject.create();
     }
 
     private void initWebClient() {
@@ -162,11 +201,19 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
         @Override
         public void onReady() {
             if (activity == null) return;
+
+            viewSubject.onNext(null);
             handleOnReady();
         }
 
         private void handleOnReady() {
             try {
+
+                if (firstTimeLoading) {
+                    firstTimeLoading = false;
+                    return;
+                }
+
                 final String address = getAddress();
                 loadUrlFromAddress(address);
             } catch (IllegalArgumentException e) {
@@ -183,25 +230,11 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
-                            this::handleWebResourceResponse,
+                            s -> handleWebResourceResponse(s),
                             this::onError
                     );
 
             subscriptions.add(sub);
-        }
-
-        private void handleWebResourceResponse(final SofaInjectResponse response) {
-            if (activity == null) return;
-            activity.getBinding()
-                    .webview
-                    .loadDataWithBaseURL(
-                        response.getAddress(),
-                        response.getData(),
-                        response.getMimeType(),
-                        response.getEncoding(),
-                        null);
-
-            setToolbarAddress(response.getAddress());
         }
 
         @Override
@@ -220,10 +253,7 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
 
         @Override
         public void onError(final Throwable t) {
-            LogUtil.exception(getClass(), "Unable to load Dapp", t);
-            if (activity == null) return;
-            showToast(R.string.error__dapp_loading);
-            activity.finish();
+            WebViewPresenter.this.onError(t);
         }
 
         @Override
@@ -235,6 +265,13 @@ public class WebViewPresenter implements Presenter<WebViewActivity> {
             }
         }
     };
+
+    private void onError(final Throwable t) {
+        LogUtil.exception(getClass(), "Unable to load Dapp", t);
+        if (activity == null) return;
+        showToast(R.string.error__dapp_loading);
+        activity.finish();
+    }
 
     private void hideLoadingSpinner() {
         activity.getBinding().loadingView.clearAnimation();
