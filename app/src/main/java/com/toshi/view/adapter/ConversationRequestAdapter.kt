@@ -37,7 +37,7 @@ class ConversationRequestAdapter(
 ) : RecyclerView.Adapter<ConversationRequestViewHolder>() {
 
     private val conversations = mutableListOf<Conversation>()
-    lateinit var localUser: User
+    var localUser: User? = null
 
     fun setConversations(conversations: List<Conversation>) {
         this.conversations.clear()

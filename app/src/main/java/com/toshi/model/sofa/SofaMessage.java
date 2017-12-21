@@ -131,7 +131,7 @@ public class SofaMessage extends RealmObject {
 
     // Helper functions
 
-    public boolean isSentBy(final User sender) {
+    public boolean isSentBy(@Nullable final User sender) {
         return this.sender!= null && this.sender.equals(sender);
     }
 

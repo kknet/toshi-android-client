@@ -85,7 +85,7 @@ class ConversationRequestActivity : AppCompatActivity() {
         })
     }
 
-    private fun handleConversationsAndLocalUser(conversations: List<Conversation>, localUser: User) {
+    private fun handleConversationsAndLocalUser(conversations: List<Conversation>, localUser: User?) {
         if (conversations.isEmpty()) finish()
         requestsAdapter.localUser = localUser
         requestsAdapter.setConversations(conversations)
