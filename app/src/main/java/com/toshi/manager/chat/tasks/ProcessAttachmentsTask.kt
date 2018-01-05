@@ -19,6 +19,7 @@ package com.toshi.manager.chat.tasks
 
 import com.toshi.crypto.signal.model.DecryptedSignalMessage
 import com.toshi.util.FileUtil
+import org.spongycastle.util.encoders.Hex
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
 
@@ -28,16 +29,18 @@ class ProcessAttachmentsTask(
     fun run(signalMessage: DecryptedSignalMessage) {
         if (!signalMessage.attachments.isPresent) return
 
-        val attachments = signalMessage.attachments.get()
+        val attachments = signalMessage.attachments?.get() ?: emptyList()
         if (attachments.size > 0) {
+            val groupId = Hex.toHexString(signalMessage.group?.groupId)
             val attachment = attachments[0]
-            val filePath = saveAttachmentToFile(attachment.asPointer())
-            signalMessage.attachmentFilePath = filePath
+            groupId?.let {
+                signalMessage.attachmentFilePath = saveAttachmentToFile(attachment.asPointer(), it)
+            }
         }
     }
 
-    private fun saveAttachmentToFile(attachment: SignalServiceAttachmentPointer): String? {
-        val attachmentFile = FileUtil.writeAttachmentToFileFromMessageReceiver(attachment, messageReceiver)
+    private fun saveAttachmentToFile(attachment: SignalServiceAttachmentPointer, groupId: String): String? {
+        val attachmentFile = FileUtil.writeAttachmentToFileFromMessageReceiver(attachment, messageReceiver, groupId)
         return attachmentFile?.absolutePath
     }
 }

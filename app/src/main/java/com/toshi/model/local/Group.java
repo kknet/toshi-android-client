@@ -70,7 +70,8 @@ public class Group extends RealmObject {
         if (group.getAvatar().isPresent()) {
             return Single.fromCallable(() -> {
                 final SignalServiceAttachmentPointer attachment = group.getAvatar().get().asPointer();
-                return FileUtil.writeAttachmentToFileFromMessageReceiver(attachment, messageReceiver);
+                final String groupId = Hex.toHexString(group.getGroupId());
+                return FileUtil.writeAttachmentToFileFromMessageReceiver(attachment, messageReceiver, groupId);
             })
             .flatMap(this::compressImage)
             .map(File::getAbsolutePath)

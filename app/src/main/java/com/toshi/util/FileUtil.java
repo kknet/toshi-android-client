@@ -46,9 +46,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.UUID;
+import java.util.zip.CRC32;
 
 import okio.BufferedSink;
 import okio.Okio;
@@ -88,9 +89,11 @@ public class FileUtil {
         return file;
     }
 
+    //TODO Add checksum to filename so we can compare files
     public @Nullable static File writeAttachmentToFileFromMessageReceiver(
             final SignalServiceAttachmentPointer attachment,
-            final SignalServiceMessageReceiver messageReceiver) {
+            final SignalServiceMessageReceiver messageReceiver,
+            final String fileId) {
         File file = null;
         try {
             final String tempName = String.format("%d", attachment.getId());
@@ -98,7 +101,7 @@ public class FileUtil {
             final int maxFileSize = 20 * 1024 * 1024;
             final InputStream inputStream = messageReceiver.retrieveAttachment(attachment, file, maxFileSize);
 
-            final File destFile = constructAttachmentFile(attachment.getContentType());
+            final File destFile = constructAttachmentFile(attachment.getContentType(), fileId);
             return writeToFileFromInputStream(destFile, inputStream);
         } catch (IOException | InvalidMessageException e) {
             LogUtil.exception(FileUtil.class, "Error during writing attachment to file", e);
@@ -110,7 +113,7 @@ public class FileUtil {
         }
     }
 
-    private static File constructAttachmentFile(final String contentType) throws IOException {
+    private static File constructAttachmentFile(final String contentType, final String fileId) throws IOException {
         final File baseDirectory = BaseApplication.get().getFilesDir();
         final String directoryPath = contentType.startsWith("image/") ? "images" : "files";
         final File outputDirectory = new File(baseDirectory, directoryPath);
@@ -120,10 +123,8 @@ public class FileUtil {
         }
 
         final String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(contentType);
-        final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HHmmss");
-        final String baseName = dateFormatter.format(new Date());
-        final String filename = String.format("%s.%s", baseName, extension);
-        return new File(outputDirectory, filename);
+        final String fileName = String.format("%s.%s", fileId, extension);
+        return new File(outputDirectory, fileName);
     }
 
     public static File createImageFileWithRandomName() {
