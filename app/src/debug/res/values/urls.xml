@@ -25,5 +25,5 @@
     <string name="qr_code_add_url">add/%1$s</string>
     <string name="qr_code_pay_url">pay/%1$s\?value=%2$s&amp;memo=%3$s</string>
     <string name="qr_code_pay_url_without_memo">pay/%1$s\?value=%2$s</string>
-    <string name="rcp_url">https://propsten.infura.io</string>
+    <string name="rcp_url">https://node.service.tokenbrowser.com/coffee</string>
 </resources>
